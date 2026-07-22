@@ -6,6 +6,7 @@ using SoccerHub.Api.Data;
 using SoccerHub.Api.DTOs;
 using SoccerHub.Api.Models;
 using SoccerHub.Api.Services;
+using SoccerHub.Api.Services.Interfaces;
 using System.Security.Claims;
 
 namespace SoccerHub.Api.Controllers
@@ -14,11 +15,11 @@ namespace SoccerHub.Api.Controllers
     [ApiController]
     public class TeamController : BaseController
     {
-        private readonly AppDbContext _context;
+        private readonly ITeamService _teamService;
 
-        public TeamController(AppDbContext context)
+        public TeamController(ITeamService teamService)
         {
-            _context = context;
+            _teamService = teamService;
         }
 
         [Authorize]
@@ -26,92 +27,86 @@ namespace SoccerHub.Api.Controllers
         public async Task<IActionResult> Create(CrearTeamDto dto)
         {
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
+            var team = await _teamService.CreateAsync(dto, userId);
 
-            int id = Convert.ToInt32(userId.Value);
-
-            
-            var team = new Team
-            {
-                Name = dto.Name,
-                UserId = id
-            };
-
-            _context.Teams.Add(team);
-            await _context.SaveChangesAsync();
-
-            var teamDto = new TeamDto
-            {
-                Id = team.Id,
-                Name = team.Name
-            };
-
-            /*return Ok(
-                new ApiResponse<TeamDto>
-                {
-                    Success = true,
-                    Message = "Equipo creado",
-                    Data = teamDto
-                }
-                );*/
-            return Success(
-                teamDto,
-                "Equipo creado");
+            return Ok(team);
         }
 
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetMyTeams()
         {
-            var id =int.Parse( User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            //var id =int.Parse( User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-            var teams = await _context.Teams
-                .Where(t => t.UserId == id)
-                .Select(t => new TeamDto
-                {
-                    Id = t.Id,
-                    Name =t.Name,
-                    CreatedAt = t.CreatedAt,
-                    PlayersCount = t.Players.Count()
-                })
-                .ToListAsync();
+            var teams = await _teamService.GetMyTeamsAsync(CurrentUserId);
 
-            var teamsDtos = teams.Select(t => new TeamDto
-            {
-                Id =t.Id,
-                Name = t.Name,
-            });
-
-            return Ok(
-                new ApiResponse<IEnumerable<TeamDto>>
-                {
-                    Success = true,
-                    Message = "Equipos encontrados",
-                    Data = teamsDtos
-                }
-                );
+            return Ok(teams);
         }
 
         [Authorize(Roles ="Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var team = await _context.Teams.FindAsync(id);
+            //var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var deleted = await _teamService.DeleteAsync(id, CurrentUserId);
+
+            if (!deleted)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Team not found"
+                });
+            }
+
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "Team deleted successfully"
+            });
+        }
+
+        [Authorize]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            //var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var team = await _teamService.GetByIdAsync(id, CurrentUserId);
 
             if (team == null)
             {
                 return NotFound();
             }
 
-            _context.Teams.Remove(team);
-            await _context.SaveChangesAsync();
+            return Ok(team);
+        }
 
-            return NoContent();
+        [Authorize]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, UpdateTeamDto dto)
+        {
+            //var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var updated = await _teamService.UpdateAsync(id, dto, CurrentUserId);
+
+            if (!updated)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Team not found"
+                });
+            }
+
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "Team updated successfully"
+            }); ;
         }
     }
 }

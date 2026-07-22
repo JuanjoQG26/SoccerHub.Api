@@ -1,9 +1,14 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SoccerHub.Api.Data;
+using SoccerHub.Api.DTOs;
 using SoccerHub.Api.Middlewares;
 using SoccerHub.Api.Services;
+using SoccerHub.Api.Services.Interfaces;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,8 +62,38 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<MatchService>();
+builder.Services.AddScoped<ITeamService, TeamService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+
+.ConfigureApiBehaviorOptions(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+
+            .Values
+
+            .SelectMany(v => v.Errors)
+
+            .Select(e => e.ErrorMessage)
+
+            .ToList();
+
+        return new BadRequestObjectResult(
+            new ApiResponse<object>
+            {
+                Success = false,
+                Message = "Validation failed",
+                Errors = errors
+            });
+    };
+});
+builder.Services.AddFluentValidationAutoValidation();
+
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 //builder.Services.AddOpenApi();
 
@@ -109,15 +144,16 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    //app.MapOpenApi();
-    app.UseSwagger();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-
-    app.UseSwaggerUI();
+    db.Database.Migrate();
 }
+
+// Configure the HTTP request pipeline.
+app.UseSwagger();
+app.UseSwaggerUI();
 
 
 

@@ -15,6 +15,8 @@ namespace SoccerHub.Api.Data
 
         public DbSet<Player> Players { get; set; }
 
+        public DbSet<Match> Matches { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -42,6 +44,18 @@ namespace SoccerHub.Api.Data
 
             modelBuilder.Entity<User>()
                 .HasData(admin);*/
+
+            modelBuilder.Entity<Match>()
+                .HasOne(m => m.HomeTeam)
+                .WithMany(t => t.HomeMatches)
+                .HasForeignKey(m => m.HomeTeamId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Match>()
+                .HasOne(m => m.AwayTeam)
+                .WithMany(t => t.AwayMatches)
+                .HasForeignKey(m => m.AwayTeamId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

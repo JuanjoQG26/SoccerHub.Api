@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SoccerHub.Api.Data;
 
@@ -11,9 +12,11 @@ using SoccerHub.Api.Data;
 namespace SoccerHub.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260625193553_UpdatePlayers")]
+    partial class UpdatePlayers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,45 +24,6 @@ namespace SoccerHub.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("SoccerHub.Api.Models.Match", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AwayGoals")
-                        .HasColumnType("int");
-
-                    b.Property<int>("AwayTeamId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("HomeGoals")
-                        .HasColumnType("int");
-
-                    b.Property<int>("HomeTeamId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("Matchdate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Stadium")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AwayTeamId");
-
-                    b.HasIndex("HomeTeamId");
-
-                    b.ToTable("Matches");
-                });
 
             modelBuilder.Entity("SoccerHub.Api.Models.Player", b =>
                 {
@@ -157,25 +121,6 @@ namespace SoccerHub.Api.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("SoccerHub.Api.Models.Match", b =>
-                {
-                    b.HasOne("SoccerHub.Api.Models.Team", "AwayTeam")
-                        .WithMany("AwayMatches")
-                        .HasForeignKey("AwayTeamId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("SoccerHub.Api.Models.Team", "HomeTeam")
-                        .WithMany("HomeMatches")
-                        .HasForeignKey("HomeTeamId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("AwayTeam");
-
-                    b.Navigation("HomeTeam");
-                });
-
             modelBuilder.Entity("SoccerHub.Api.Models.Player", b =>
                 {
                     b.HasOne("SoccerHub.Api.Models.Team", "Team")
@@ -200,10 +145,6 @@ namespace SoccerHub.Api.Migrations
 
             modelBuilder.Entity("SoccerHub.Api.Models.Team", b =>
                 {
-                    b.Navigation("AwayMatches");
-
-                    b.Navigation("HomeMatches");
-
                     b.Navigation("Players");
                 });
 

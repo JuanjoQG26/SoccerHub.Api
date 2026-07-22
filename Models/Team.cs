@@ -16,5 +16,8 @@ namespace SoccerHub.Api.Models
         public User User { get; set; } = null!;
 
         public ICollection<Player> Players { get; set; } = new List<Player>();
+
+        public ICollection<Match> HomeMatches { get; set; } = new List<Match>();
+        public ICollection<Match> AwayMatches { get; set; } = new List<Match>();
     }
 }

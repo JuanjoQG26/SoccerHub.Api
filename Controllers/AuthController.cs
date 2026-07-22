@@ -7,6 +7,7 @@ using SoccerHub.Api.Models;
 using SoccerHub.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using SoccerHub.Api.Services.Interfaces;
 
 namespace SoccerHub.Api.Controllers
 {
@@ -14,66 +15,27 @@ namespace SoccerHub.Api.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly TokenService _tokenService;
+        private readonly IAuthService _authService;
 
-        public AuthController(AppDbContext context, TokenService tokenService)
+        public AuthController(IAuthService authService)
         {
-            _context = context;
-            _tokenService = tokenService;
+            _authService = authService;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDTO dto)
         {
-            var exitsUser = await _context.Users.AnyAsync(x => x.Email == dto.Email);
+            var response = await _authService.RegisterAsync(dto);
 
-            if (exitsUser)
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "Email ready exists"
-                });
-            }
-
-            var user = new User
-            {
-                Name = dto.Name,
-                Email = dto.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                Role = UserRole.User
-            };
-
-            _context.Users.Add(user);
-
-            await _context.SaveChangesAsync();
-
-            var token = _tokenService.GenerarToken(user);
-
-            return Ok(new AuthResponseDto { Token = token});
+            return Ok(response);
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var response = await _authService.LoginAsync(dto);
 
-            if (user == null)
-            {
-                return Unauthorized("Invalid credentials");
-            }
-
-            bool validPassword = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
-
-            if (!validPassword)
-            {
-                return Unauthorized("Invalid credentials");
-            }
-
-            var token = _tokenService.GenerarToken(user);
-
-            return Ok(new AuthResponseDto { Token = token});
+            return Ok(response);
         }
 
         [Authorize]
