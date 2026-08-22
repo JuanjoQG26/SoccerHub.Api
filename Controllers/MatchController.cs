@@ -36,8 +36,8 @@ namespace SoccerHub.Api.Controllers
             return Ok(ApiResponseHelper.Success(matches));
         }
 
-        [HttpGet("schelduled")]
-        public async Task<IActionResult> GetShelduled()
+        [HttpGet("scheduled")]
+        public async Task<IActionResult> GetSheduled()
         {
             var matches = await _matchService.GetSchelduleAsync();
 
@@ -67,5 +67,29 @@ namespace SoccerHub.Api.Controllers
 
             return Ok(ApiResponseHelper.Success(result));
         }*/
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var match = await _matchService.GetByIdAsync(id);
+
+            return Ok(ApiResponseHelper.Success(match));
+        }
+
+        [HttpPut("{id}/result")]
+        public async Task<IActionResult> UpdateResult(int id, UpdateMatchResultDto dto)
+        {
+            var match = await _matchService.UpdateResultAsync(id, dto);
+
+            return Ok(ApiResponseHelper.Success(match, "Result updated succesfully"));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _matchService.DeleteAsync(id);
+
+            return Ok(ApiResponseHelper.Success<string>("null", "Match deleted succesfully"));
+        }
     }
 }

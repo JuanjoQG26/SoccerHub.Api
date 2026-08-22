@@ -65,6 +65,8 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<MatchService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<StandingService>();
+builder.Services.AddScoped<DashboardService>();
 
 builder.Services.AddControllers()
 

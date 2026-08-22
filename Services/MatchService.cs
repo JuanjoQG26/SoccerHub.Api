@@ -190,5 +190,143 @@ namespace SoccerHub.Api.Services
                 TotalPages = (int)Math.Ceiling((double)totalItems / pagination.PageSize)
             };
         }
+
+        public async Task<MatchDto> GetByIdAsync(int id)
+        {
+            var match = await _context.Matches
+                .Include(m => m.HomeTeam)
+                .Include(m => m.AwayTeam)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (match == null)
+            {
+                throw new Exception("Match not found");
+            }
+
+            return match.ToDto();
+        }
+
+        public async Task<MatchDto> UpdateResultAsync(int id, UpdateMatchResultDto dto)
+        {
+            var match = await _context.Matches
+                .Include(m => m.HomeTeam)
+                .Include(m => m.AwayTeam)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (match == null)
+            {
+                throw new Exception("Match not found");
+            }
+
+            if (match.Status == MatchStatus.Finished)
+                throw new Exception("This match has already been finished.");
+
+            match.HomeGoals = dto.HomeGoals;
+            match.AwayGoals = dto.AwayGoals;
+            match.Status = MatchStatus.Finished;
+
+            await ApplyMatchResultAsync(match);
+
+            await _context.SaveChangesAsync();
+
+            return match.ToDto();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var match = await _context.Matches.FindAsync(id);
+
+            if (match == null)
+            {
+                throw new Exception("Match not found");
+            }
+
+            _context.Matches.Remove(match);
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task ApplyMatchResultAsync(Match match)
+        {
+            /*var homeTeam = await _context.Teams
+                .FirstOrDefaultAsync(t => t.Id == match.HomeTeamId);
+            var awayTeam = await _context.Teams
+                .FirstOrDefaultAsync(t => t.Id == match.AwayTeamId);*/
+            var homeTeam = match.HomeTeam;
+            var awayTeam = match.AwayTeam;
+
+            if (homeTeam == null || awayTeam == null)
+            {
+                throw new Exception("Team not found.");
+            }
+
+            // Partido jugado
+            homeTeam.Played++;
+            awayTeam.Played++;
+
+            // Goles
+            homeTeam.GoalsFor = match.HomeGoals;
+            homeTeam.GoalsAgaints = match.AwayGoals;
+
+            awayTeam.GoalsFor = match.AwayGoals;
+            awayTeam.GoalsAgaints = match.HomeGoals;
+
+            // Resultado
+            if (match.HomeGoals > match.AwayGoals)
+            {
+                homeTeam.Wins++;
+                homeTeam.Points += 3;
+
+                awayTeam.Losses++;
+            }
+            else if (match.HomeGoals < match.AwayGoals)
+            {
+                awayTeam.Wins++;
+                awayTeam.Points += 3;
+
+                homeTeam.Losses++;
+            }
+            else
+            {
+                homeTeam.Draws++;
+                awayTeam.Draws++;
+
+                homeTeam.Points += 1;
+                awayTeam.Points += 1;
+            }
+        }
+
+        private static void ValideMatchCanBeFinished(Match match)
+        {
+            if (match.Status == MatchStatus.Finished)
+            {
+                throw new Exception("This match has already been finished.");
+            }
+
+            if (match.Status == MatchStatus.Cancelled)
+            {
+                throw new Exception("Cancelled matches cannot be finished.");
+            }
+        }
+
+        public async Task CancelAsync(int id)
+        {
+            var match = await _context.Matches
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (match == null)
+            {
+                throw new Exception("Match not found.");
+            }
+
+            if (match.Status == MatchStatus.Finished)
+            {
+                throw new Exception("Finished matches cannot be cancelled.");
+            }
+
+            match.Status = MatchStatus.Cancelled;
+
+            await _context.SaveChangesAsync();
+        }
     }
 }
