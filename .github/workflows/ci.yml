@@ -27,3 +27,6 @@ jobs:
 
       - name: Ejecutar pruebas
         run: dotnet test --no-build
+
+      - name: Construir imagen Docker
+        run: docker build -t soccerhub-api .
