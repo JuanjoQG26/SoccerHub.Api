@@ -32,6 +32,12 @@ jobs:
       - name: Ejecutar pruebas
         run: dotnet test --no-build
 
+      - name: Mostrar información de GitHub
+        run: |
+          echo "Repositorio: $GITHUB_REPOSITORY"
+          echo "Ref: $GITHUB_REF"
+          echo "Evento: $GITHUB_EVENT_NAME"
+
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
